@@ -26,7 +26,7 @@ func create(event_info: Dictionary, id: String ):
 	day = event_info.day
 	where = event_info.where
 	direct_witness = event_info.direct_witness
-	indirect_witness = event_info.direct_witness
+	indirect_witness = event_info.indirect_witness
 	
 	for field in custom_fields:
 		if event_info.has(field):

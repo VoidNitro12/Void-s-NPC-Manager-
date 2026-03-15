@@ -103,7 +103,7 @@ func query_char(target_id: String, npc: Dictionary, vibe) -> Array:
 		pool = _dialogue_pool_character[sel_char][vibe]
 	else:
 		pool = _dialogue_pool_character["UNAWARE"][vibe]
-	return [sel_char]
+	return [pool,sel_char]
 
 func talk_to_npc(npc: Dictionary, id: String, event_based: bool = false, char_based: bool = false):
 	var pool
@@ -122,6 +122,6 @@ func talk_to_npc(npc: Dictionary, id: String, event_based: bool = false, char_ba
 		var type = data[1]
 		choice = dialogue_event_format(type, choice)
 	if char_based:
-		var type = pool[1]
+		var type = data[1]
 		# I REALLY NEED TO RETHINK RELATIONSHIPS
 	return choice
