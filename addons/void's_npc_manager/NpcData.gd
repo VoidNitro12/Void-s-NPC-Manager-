@@ -2,7 +2,7 @@
 class_name NpcData
 extends Resource
 
-var custom_fields = NpcEngine.custom_npc_fields
+var custom_fields = NpcEngine._custom_npc_fields
 var custom = {}
 
 @export var npc_id: String = ""

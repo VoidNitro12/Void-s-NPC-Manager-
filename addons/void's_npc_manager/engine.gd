@@ -35,7 +35,7 @@ var game_time = {
 ## Information about the player
 var player_data = {
 	"id": "0",
-	"name" : "Player",
+	"player_name" : "Player",
 		"direct_events": [],
 		"indirect_events": []
 }
@@ -78,7 +78,7 @@ func remove_npc_field(field: String):
 	_custom_npc_fields.erase(field)
 
 ## Returns a list of all current custom event fields 
-func see__custom_event_fields() -> Array:
+func see_custom_event_fields() -> Array:
 	return _custom_event_fields
 
 ## Returns a list of all current custom NPC fields and their types
@@ -117,7 +117,7 @@ func add_event_type(type: String, type_values: Array):
 ## Under witness, its refering to npcs that directly witnessed the even and those that should know of it indirectly, its respective subentries should contain NPC ids.
 ## If added individual NPC's data will be updated automaticaly.
 ## Any existing custom fields should be included. [br]
-## Set [code]involve_player[/code] to [code]true[/code] to add this events to the players data, set [code]player_type[/code] to "direct" or "indirect" if so
+## Set [code]involve_player[/code] to [code]true[/code] to add this events to the players data, set [code]player_type[/code] to "direct_witness" or "indirect_witness" if so
 func add_event(event_info: Dictionary, event_type_info: Array, involve_player : bool = false , player_type : String = "none"):
 	
 	var num_ids = _count_files(event_path)
@@ -152,7 +152,7 @@ func add_event(event_info: Dictionary, event_type_info: Array, involve_player : 
 			push_warning("NPC id %s in indirect witness' doesnt exist", witness)
 		else:
 			npc.indirect_events.append(event_id)
-		ResourceSaver.save(npc,dir)
+			ResourceSaver.save(npc,dir)
 
 ## Adds an NPC to memory. accepts dictionaries.
 ##[codeblock]
@@ -204,6 +204,7 @@ func get_all_npc_by_name(target: String) -> Dictionary:
 				file_name = dir.get_next()
 			else:
 				results[npc.npc_id] = npc
+				file_name = dir.get_next()
 		if results.is_empty():
 			push_error("No NPC found with the name: %s" %target)
 		dir.list_dir_end()
@@ -212,7 +213,7 @@ func get_all_npc_by_name(target: String) -> Dictionary:
 ## returns an NPCs id from its name. Returns the first found NPC with said name
 ## If looking for a dictonary with all NPCs possessing the same name and their respective ids. see [method get_all_npc_by_name]
 ## If no NPC with this name is found, will return [code]null[/code]
-func get_npc_by_name(target: String) : 
+func get_npc_by_name(target: String)  -> Resource: 
 	var dir = DirAccess.open(npc_path)
 	var found_npc = null
 	if dir:
@@ -232,7 +233,7 @@ func get_npc_by_name(target: String) :
 	return found_npc
 
 # Checks if a given input is a valid id or name of an NPC and if true, Returns their id
-func _check_for_npc(id) -> String:
+func _check_for_npc(id) -> Resource:
 	var npc
 	if id.is_valid_int():
 		var list = get_npc(id)
@@ -268,7 +269,7 @@ func update_npc_relationship(npc: String, target: String, value: float, type: St
 					break
 		
 		var update = {
-			"name": sel_npc.name,
+			"name": sel_npc.npc_name,
 			"type": type,
 			"value": value,
 			"memories": shared_memories
@@ -277,7 +278,7 @@ func update_npc_relationship(npc: String, target: String, value: float, type: St
 		sel_npc.relationships[target_id] = update
 		
 	elif target == "player":
-		var player_events = player_data.events.direct 
+		var player_events = player_data.direct_events
 		var shared_memories = []
 		
 		for i in sel_npc_events: 
@@ -287,7 +288,7 @@ func update_npc_relationship(npc: String, target: String, value: float, type: St
 					break
 		
 		var update = {
-			"name": player_data.name,
+			"name": player_data.player_name,
 			"type": type,
 			"value": value,
 			"memories": shared_memories, 
@@ -350,7 +351,7 @@ func _count_files(path):
 
 ## gets an NPC's data and returns it as well as its directory
 func get_npc(npc_id: String):
-	var target = "Npc_%s.tres" %npc_id
+	var target = "NPC_%s.tres" %npc_id
 	var dir = npc_path + target
 	if not FileAccess.file_exists(dir):
 		push_error("NPC file not found")
