@@ -9,8 +9,10 @@ extends Node
 ## EAGER = friendly, expressive, curious and not patient. [br]
 ## DETACHED = unfriendly,neutral expressiveness, neutral curiousity and neutral patience. [br]
 ## TERSE = neutraly friendly, not expressive, not curious and not patient. [br]
+# Note. Just for reference, in the code the enum descriptor is not used in dialogue.gd
+# It is however, used in NpcEngine.generate_dialogue_character_template and
+# NpcEngine.generate_dialogue_event_template
 enum descriptor {WARM, GENTLE, COLD, HOSTILE, DISTANT, EAGER, DETACHED, TERSE}
-
 
 var _dialogue_pool_event = {}
 
@@ -48,9 +50,9 @@ func apply_mood(npc: Resource) -> Resource:
 func _vibe_band(value: float, range: String) -> bool:
 	var range_float = []
 	if range == "high" : 
-		range_float = [0.7,1.0]
+		range_float = [0.6,1.0]
 	elif range == "neutral": 
-		range_float = [0.4,0.7]
+		range_float = [0.4,0.6]
 	elif range == "low": 
 		range_float = [0.0,0.4]
 	var result = false
@@ -67,33 +69,33 @@ func _vibe_map(npc: Resource):
 	var p = npc.patience
 	var c = npc.curiosity
 	if _vibe_band(f, "high") and _vibe_band(e, "high")  and _vibe_band(p, "high") and _vibe_band(c, "high"):
-		vibe = descriptor.WARM
+		vibe = "WARM"
 	elif _vibe_band(f, "high") and _vibe_band(e, "high") and _vibe_band(p, "high") and _vibe_band(c, "neutral"):
-		vibe = descriptor.GENTLE
+		vibe = "GENTLE"
 	elif _vibe_band(f, "low") and _vibe_band(e, "low") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = descriptor.COLD
+		vibe = "COLD"
 	elif _vibe_band(f, "low") and _vibe_band(e, "high") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = descriptor.HOSTILE
+		vibe = "HOSTILE"
 	elif _vibe_band(f, "neutral") and _vibe_band(e, "neutral") and _vibe_band(p, "neutral") and _vibe_band(c, "neutral"):
-		vibe = descriptor.DISTANT
+		vibe = "DISTANT"
 	elif _vibe_band(f, "high") and _vibe_band(e, "high") and _vibe_band(p, "low") and _vibe_band(c, "high"):
-		vibe = descriptor.EAGER
+		vibe = "EAGER"
 	elif _vibe_band(f, "neutral") and _vibe_band(e, "low") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = descriptor.TERSE
+		vibe = "TERSE"
 	elif _vibe_band(f, "low") and _vibe_band(e, "neutral") and _vibe_band(p, "neutral") and _vibe_band(c, "neutral"):
-		vibe = descriptor.DETACHED
+		vibe = "DETACHED"
 	else:
 		push_warning("No match found, using default of Distant")
-		vibe = descriptor.DISTANT
-	return vibe.key()
+		vibe = "DISTANT"
+	return vibe
 
-func query_event(event_id: String, npc: Dictionary, vibe) -> Array:
+func query_event(event_id: String, npc: Resource, vibe) -> Array:
 	var data = NpcEngine.get_event(event_id)
 	var event = data[0]
 	var pool
-	if npc.id in event.direct_witness:
+	if npc.npc_id in event.direct_witness:
 		pool = _dialogue_pool_event[event.type]["direct"][vibe]
-	elif npc.id in event.indirect_witness:
+	elif npc.npc_id in event.indirect_witness:
 		pool = _dialogue_pool_event[event.type]["indirect"][vibe]
 	else:
 		pool = _dialogue_pool_event["UNAWARE"][vibe]
@@ -103,8 +105,9 @@ func query_char(target_id: String, npc: Resource, vibe) -> Array:
 	var data = NpcEngine.get_npc(target_id)
 	var target = data[0]
 	var pool
-	var sel_char = npc.relationshipd[target_id].type
+	var sel_char 
 	if npc.relationships.has(target_id):
+		sel_char = npc.relationships[target_id].type
 		pool = _dialogue_pool_character[sel_char][vibe]
 	else:
 		pool = _dialogue_pool_character["UNAWARE"][vibe]
@@ -133,5 +136,6 @@ func talk_to_npc(npc: Resource, id: String, event_based: bool = false, char_base
 		choice = _dialogue_event_format(type, choice)
 	elif char_based:
 		var sel_char_type = data[1]
-		choice = _dialogue_char_format(sel_char_type, choice)
+		if sel_char_type != null:
+			choice = _dialogue_char_format(sel_char_type, choice)
 	return choice
