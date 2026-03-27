@@ -10,8 +10,8 @@ extends Node
 ## DETACHED = unfriendly,neutral expressiveness, neutral curiousity and neutral patience. [br]
 ## TERSE = neutraly friendly, not expressive, not curious and not patient. [br]
 # Note. Just for reference, in the code the enum descriptor is not used in dialogue.gd
-# It is however, used in NpcEngine.generate_dialogue_character_template and
-# NpcEngine.generate_dialogue_event_template
+# It is however, used in NpcManager.generate_dialogue_character_template and
+# NpcManager.generate_dialogue_event_template
 enum descriptor {WARM, GENTLE, COLD, HOSTILE, DISTANT, EAGER, DETACHED, TERSE}
 
 var _dialogue_pool_event = {}
@@ -97,7 +97,7 @@ func _vibe_map(npc: Resource):
 	return vibe
 
 func query_event(event_id: String, npc: Resource, vibe) -> Array:
-	var data = NpcEngine.get_event(event_id)
+	var data = NpcManager.get_event(event_id)
 	var event = data[0]
 	var pool
 	if npc.npc_id in event.direct_witness:
@@ -109,7 +109,7 @@ func query_event(event_id: String, npc: Resource, vibe) -> Array:
 	return [pool,event]
 	
 func query_char(target_id: String, npc: Resource, vibe) -> Array:
-	var data = NpcEngine.get_npc(target_id)
+	var data = NpcManager.get_npc(target_id)
 	var target = data[0]
 	var pool
 	var sel_char 
@@ -145,4 +145,7 @@ func talk_to_npc(npc: Resource, id: String, event_based: bool = false, char_base
 		#var sel_char_type = data[1]
 		#if sel_char_type != null:
 			#pass
+	if choice.contains("{player0}"): 
+		var player_name = NpcManager.player_data.player_name
+		choice = choice.replace("{player0}",player_name)
 	return choice

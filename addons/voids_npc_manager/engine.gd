@@ -1,27 +1,26 @@
 @tool
-class_name NpcManager
 extends Node
 ## Void's NPC Manager (WIP)
 ## Main script for the NPC manager
 
-var _dialogue : Node 
+## Path where all NPC's will be stored. see [method set_npc_saves] to change it.[br]
+## By default it is set to: [code] "res://addons/void's_npc_manager/NPCs/" [/code]
+var npc_path = "res://addons/voids_npc_manager/NPCs/"
 
-## Path where all NPC's will be stored. see [method set_npc_saves] to change it.
-var npc_path = "res://addons/void's_npc_manager/NPCs/"
-
-## Path where all Events's will be stored. see [method set_event_saves] to change it.
-var event_path = "res://addons/void's_npc_manager/Events/"
+## Path where all Events's will be stored. see [method set_event_saves] to change it.[br]
+## By default it is set to: [code] "res://addons/void's_npc_manager/Events/ [/code]
+var event_path = "res://addons/voids_npc_manager/Events/"
 
 ## Path where data such as custom fields, player data and time are stored.
-## see [method set_data_saves] to change it
-var plugin_data_path: String = "res://addons/void's_npc_manager/plugin_data.tres"
+## see [method set_data_saves] to change it. [br]
+## By default it is set to: [code] "res://addons/void's_npc_manager/plugin_data.tres" [/code]
+var plugin_data_path: String = "res://addons/voids_npc_manager/plugin_data.tres"
 
 ## Set to [code]false[/code] to disable automatic loading of stored plugindata at runtime (_ready)
 var load_PluginData_on_runtime = true
 
+
 func _ready() -> void:
-	_dialogue = preload("res://addons/void's_npc_manager/dialogue.gd").new()
-	add_child(_dialogue)
 	if load_PluginData_on_runtime:
 		load_plugin_data()
 
@@ -219,7 +218,9 @@ func add_npc(npc_info: Dictionary):
 	_npc_counter += 1
 	save_plugin_data()
 
-## Deletes an NPC permanently
+## Deletes an NPC permanently. [br]
+## Note that NPC ids are not reassignable, deleting an NPC with an id "1"
+## means no NPC will have the id "1" again to avoid potential conflicts.
 func remove_npc(npc_id: String):
 	var path = npc_path + "NPC_%s.tres" % npc_id
 	if ResourceLoader.exists(path):
@@ -229,7 +230,9 @@ func remove_npc(npc_id: String):
 	else:
 		push_error("NPC not found: %s" % npc_id)
 
-## Deletes an Event permanently
+## Deletes an Event permanently.[br]
+## Note that Event ids are not reassignable, deleting an Event with an id "1"
+## means no Event will have the id "1" again to avoid potential conflicts.
 func remove_event(event_id: String):
 	var path = event_path + "Event_%s.tres" % event_id
 	if ResourceLoader.exists(path):
@@ -401,6 +404,7 @@ func get_event(event_id: String) -> Array:
 
 ## Generates a json file based on all the registered event types for easier dialogue writing.
 ## Deals with dialogue pertaining to events.
+## Expects a folder path in [code]path[/code] and a file name in [code]file_name[/code]
 func generate_dialogue_event_template(file_name:String, path: String):
 	if path.is_absolute_path() == false :
 		push_error("Provided Path must be an absolute path")
@@ -413,20 +417,21 @@ func generate_dialogue_event_template(file_name:String, path: String):
 	var template = {}
 	for type in _custom_event_types:
 		template[type] = {"direct":{}, "indirect":{}}
-		for descriptor_name in _dialogue.descriptor.keys() :
+		for descriptor_name in NpcDialogue.descriptor.keys() :
 			template[type]["direct"][descriptor_name] = []
 			template[type]["indirect"][descriptor_name] = []
 	template["UNAWARE"] = {}
-	for descriptor_name in _dialogue.descriptor.keys() :
+	for descriptor_name in NpcDialogue.descriptor.keys() :
 		template["UNAWARE"][descriptor_name] = []
 
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
 	file.store_string(JSON.stringify(template, "\t"))
 	file.close()
-	print("Dialogue template generated at: ", save_path)
+	print("_dialogue template generated at: ", save_path)
 
 ## generates a json file based on all the registered event types for easier dialogue writing
 ## Deals with dialogue pertaining to NPC's or the player.
+## Expects a folder path in [code]path[/code] and a file name in [code]file_name[/code]
 func generate_dialogue_character_template(file_name:String, path: String):
 	if path.is_absolute_path() == false :
 		push_error("Provided Path must be an absolute path")
@@ -439,11 +444,11 @@ func generate_dialogue_character_template(file_name:String, path: String):
 	var template = {}
 	for type in _custom_relationship_types:
 		template[type] = {}
-		for descriptor_name in _dialogue.descriptor.keys() :
+		for descriptor_name in NpcDialogue.descriptor.keys() :
 			template[type][descriptor_name] = []
 			template[type][descriptor_name] = []
 	template["UNAWARE"] = {}
-	for descriptor_name in _dialogue.descriptor.keys() :
+	for descriptor_name in NpcDialogue.descriptor.keys() :
 		template["UNAWARE"][descriptor_name] = []
 		template["UNAWARE"][descriptor_name] = []
 	var file = FileAccess.open(save_path, FileAccess.WRITE)
@@ -473,17 +478,13 @@ func _load_json(path: String) -> Dictionary:
 ## see [method generate_dialogue_character_template] and [method generate_dialogue_event_template]
 ## for an automated json file pertaining to dialogue
 func load_dialogue_pools(event_pool_path: String, character_pool_path: String):
-	_dialogue._dialogue_pool_event = _load_json(event_pool_path)
-	_dialogue._dialogue_pool_character = _load_json(character_pool_path)
-
+	NpcDialogue._dialogue_pool_event = _load_json(event_pool_path)
+	NpcDialogue._dialogue_pool_character = _load_json(character_pool_path)
 ## set the file path NPC's data should be stored in. Must be an absolute path
 ## see [method set_event_saves] to set event save path
 func set_npc_saves(path: String):
 	if not path.is_absolute_path():
 		push_error("path must be an absolute path")
-		return
-	if not ResourceLoader.exists(path):
-		push_error("File not found: " + path)
 		return
 	if event_path == path:
 		push_error("Event and NPC save paths cannot be the same")
@@ -499,9 +500,6 @@ func set_event_saves(path: String):
 	if not path.is_absolute_path():
 		push_error("path must be an absolute path")
 		return
-	if not ResourceLoader.exists(path):
-		push_error("File not found: " + path)
-		return
 	if npc_path == path:
 		push_error("Event and NPC save paths cannot be the same")
 		return
@@ -511,13 +509,15 @@ func set_event_saves(path: String):
 	event_path = path
 	
 ## set the file path general data should be stored in. Include custom fields, player data etc.
-## Must be an absolute path. expects a full path with a file name i.e not a folder
-func set_data_saves(path: String):
-	if not path.is_absolute_path():
-		push_error("path must be an absolute path")
-		return
-	if not path.ends_with(".tres"):
-		push_error("Path must be a .tres file")
+## Must be an absolute path. expects a folder path in [code]path[/code] and a file name in [code]file_name[/code]
+func set_data_saves(file_name: String,path: String):
+	if not file_name.ends_with(".tres"):
+		file_name += ".tress"
+	if not path.ends_with("/"):
+		path += "/"
+	var save_path = path + file_name
+	if save_path.is_absolute_path() == false :
+		push_error("Provided Path must be an absolute path")
 		return
 	if npc_path == path:
 		push_error("Cannot be the same with NPC path")
@@ -525,10 +525,10 @@ func set_data_saves(path: String):
 	if event_path == path:
 		push_error("Cannot be the same with Event path")
 		return
-	plugin_data_path = path
+	plugin_data_path = save_path
 
 ## saves relevant plugin information to plugin_data_path. see [method set_data_saves] to change the path.
-## is normally called after [method add_npc] and [method add_event]. 
+## is automatically called after [method add_npc] and [method add_event]. 
 ## Though it is still advised to call periodically regardless to not lose data
 func save_plugin_data():
 	var data = PluginData.new()

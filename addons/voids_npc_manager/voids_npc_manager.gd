@@ -1,16 +1,18 @@
 @tool
 extends EditorPlugin
 
-const ENGINE_AUTO = "NpcEngine"
+const ENGINE_AUTO = "NpcManager"
+const DIALOGUE_AUTO = "NpcDialogue"
 
 func _enable_plugin() -> void:
-	add_autoload_singleton(ENGINE_AUTO, "res://addons/void's_npc_manager/engine.gd")
+	add_autoload_singleton(ENGINE_AUTO, "res://addons/voids_npc_manager/engine.gd")
+	add_autoload_singleton(DIALOGUE_AUTO, "res://addons/voids_npc_manager/dialogue.gd")
 
 
 
 func _disable_plugin() -> void:
 	remove_autoload_singleton(ENGINE_AUTO)
-
+	remove_autoload_singleton(DIALOGUE_AUTO)
 
 
 func _enter_tree() -> void:
