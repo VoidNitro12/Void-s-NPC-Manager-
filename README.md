@@ -1,4 +1,4 @@
-# Void's NPC Manager
+# Void's NPC Manager (WIP)
 
 A simple NPC handler system that stores events and links them to NPCs, with relationship tracking, mood-based dialogue, and dynamic placeholder replacement.
 
@@ -11,7 +11,6 @@ A simple NPC handler system that stores events and links them to NPCs, with rela
 - Persistent save/load using Godot Resources
 
 ## Getting Started
-
 To use this plugin, create a setup function to define your custom fields, event types, and save paths **before** loading any NPCs or events.
 
 ### Example Setup
@@ -42,16 +41,12 @@ func setup_NpcManager():
     NpcManager.add_event_type("fight", ["fighter1", "fighter2", "cause"])
     NpcManager.add_event_type("celebration", ["organizer", "reason"])
     NpcManager.add_event_field("importance")
-    
- 
 ```
-
-###Notes
+### Notes
 
 - Save paths are folders (except set_data_saves which takes a folder + filename)
 - Folders are not auto-created—ensure they exist or create them in code
 - Custom fields become accessible via npc.custom["field_name"]
-- Generated JSON templates provide a starting point for dialogue writing
 
 ## Documentation
 - [Dialogue Syntax and rules](addons/voids_npc_manager/examples/Docs/Dialogue_Syntax.md)
