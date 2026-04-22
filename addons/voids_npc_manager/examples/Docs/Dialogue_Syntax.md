@@ -87,14 +87,10 @@ The same applies to the player's name. Use {player0} anywhere in your dialogue, 
 
 ```
 
-
-
-##Placeholders
-
+## Placeholders
 When writing dialogue, use curly braces {} for dynamic values.
 
-##Event Placeholders
-
+## Event Placeholders
 Any field defined in an event type can be used as a placeholder:
 
 ```
