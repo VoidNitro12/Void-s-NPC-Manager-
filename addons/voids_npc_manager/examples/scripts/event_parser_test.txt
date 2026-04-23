@@ -1,5 +1,6 @@
 # Test: UNAWARE event pool (fallback when NPC doesn't know about an event)
 # "~" denotes Event Type. Should match NpcManager._event_types or be "UNAWARE"
+@EVENT
 
 ~UNAWARE
 /COLD

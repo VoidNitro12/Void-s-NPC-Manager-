@@ -39,7 +39,7 @@ func pool_request(pool_type: int, field: String,vibe: int,mode: int,section: Str
 			var sel_script
 			locator = _pool_character_locator
 			pool_path = _pool_character_path
-			if _pool_event_script == null :
+			if _pool_character_script == null :
 				sel_script = _load_scripts(_pool_character_script, _pool_character_path)
 			else:
 				sel_script = _pool_character_script
@@ -53,7 +53,6 @@ func pool_request(pool_type: int, field: String,vibe: int,mode: int,section: Str
 	mode = NpcDialogue.PoolContext.keys()[mode]
 	var target = "%s_%s_%s_%s"%[field,vibe,mode,section]
 	var raw_pool = locator["SECTION"].has(target)
-	
 	
 	if raw_pool == false:
 		push_error("Pool not found")
@@ -132,7 +131,7 @@ func _check_fields(pool_type: int, field: String,vibe: int):
 		_:
 			push_error("Invalid PoolType seeNpcDialogue.PoolType")
 	for entry in matches:
-		if not entry:
+		if not matches[entry]:
 			var mismatches = str(matches)
 			push_error("Some entries do not match any existing in the NpcManager, Mismatches: %s"%mismatches)
 

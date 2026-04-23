@@ -74,20 +74,20 @@ func _dialogue_char_format(sel_char_type: String, line: String) -> String:
 func _apply_mood(npc: Resource) -> Resource:
 	var traits = ["friendliness", "expressiveness", "patience", "curiosity"]
 	for value in traits:
-		var base = npc[value]
+		var base = npc["base_" + value]
 		var min_val = base - npc.personality_range
 		var max_val = base + npc.personality_range
-		npc[value] = clampf(base + npc.mood, min_val, max_val)
+		npc[value] = clampf(npc[value] + npc.mood, min_val, max_val)
 	return npc
 
-func _vibe_band(value: float, range: String) -> bool:
+func _vibe_band(value: int, range: String) -> bool:
 	var range_float = []
 	if range == "high" : 
-		range_float = [0.6,1.0]
+		range_float = [60,100]
 	elif range == "neutral": 
-		range_float = [0.4,0.6]
+		range_float = [40,60]
 	elif range == "low": 
-		range_float = [0.0,0.4]
+		range_float = [0,40]
 	var result = false
 	var low = range_float[0]
 	var high = range_float[1]
@@ -101,23 +101,30 @@ func _vibe_map(npc: Resource):
 	var e = npc.expressiveness
 	var p = npc.patience
 	var c = npc.curiosity
-	if _vibe_band(f, "high") and _vibe_band(e, "high")  and _vibe_band(p, "high") and _vibe_band(c, "high"):
-		vibe = Vibe.WARM
-	elif _vibe_band(f, "high") and _vibe_band(e, "high") and _vibe_band(p, "high") and _vibe_band(c, "neutral"):
-		vibe = Vibe.GENTLE
-	elif _vibe_band(f, "low") and _vibe_band(e, "low") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = Vibe.COLD
-	elif _vibe_band(f, "low") and _vibe_band(e, "high") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = Vibe.HOSTILE
-	elif _vibe_band(f, "neutral") and _vibe_band(e, "neutral") and _vibe_band(p, "neutral") and _vibe_band(c, "neutral"):
-		vibe = Vibe.DISTANT
-	elif _vibe_band(f, "high") and _vibe_band(e, "high") and _vibe_band(p, "low") and _vibe_band(c, "high"):
-		vibe = Vibe.EAGER
-	elif _vibe_band(f, "neutral") and _vibe_band(e, "low") and _vibe_band(p, "low") and _vibe_band(c, "low"):
-		vibe = Vibe.TERSE
-	elif _vibe_band(f, "low") and _vibe_band(e, "neutral") and _vibe_band(p, "neutral") and _vibe_band(c, "neutral"):
-		vibe = Vibe.DETACHED
-	else:
+	
+	var warm = { "name": Vibe.WARM, f:["high"], e:["high","neutral"], p:["high","neutral"], c:["high","neutral"]}
+	var gentle = { "name": Vibe.GENTLE, f:["high","neutral"], e:["high"], p:["high","neutral"], c:["neutral","low"]}
+	var cold = { "name": Vibe.COLD, f:["low"], e:["low"], p:["low","neutral"], c:["low"]}
+	var hostile = { "name": Vibe.HOSTILE, f:["low"], e:["high"], p:["low"], c:["low","neutral"]}
+	var distant = { "name": Vibe.DISTANT, f:["neutral","low"], e:["neutral","low"], p:["neutral"], c:["neutral"]}
+	var eager = { "name": Vibe.EAGER, f:["high","neutral"], e:["high"], p:["low"], c:["high"]}
+	var terse = { "name": Vibe.TERSE, f:["neutral"], e:["low"], p:["low"], c:["low","neutral"]}
+	var detached = { "name": Vibe.DETACHED, f:["low"], e:["neutral","low"], p:["neutral"], c:["neutral"]}
+	var vibes = [warm,gentle,cold,hostile,eager,terse,detached,distant]
+	for v in vibes:
+		var stack = []
+		var trait_passes = false
+		for key in v:
+			if key != "name":
+				var value = v[key]
+				for item in value:
+					if  _vibe_band(key,item):
+						trait_passes = true
+				stack.append(trait_passes)
+		if not stack.has(false):
+			vibe = v.name
+			break
+	if vibe == null:
 		push_warning("No match found, using default of Distant")
 		vibe = Vibe.DISTANT
 	return vibe
@@ -140,18 +147,19 @@ func _query_event(event_id: String, npc: Resource, vibe: int , context: int, sec
 		pool = parser.pool_request(PoolType.EVENT,"UNAWARE",vibe,context,section)
 	return [pool,event]
 
-func _query_char(target_id: String, npc: Resource, vibe, reactive) -> Array:
-	#Currently Outdated while building
-	var target = NpcManager.get_npc(target_id)
+func _query_char(char_id: String, npc: Resource, vibe: int , context: int, section: String) -> Array:
+	var target = NpcManager.get_npc(char_id)
+	var parser = Parser.new()
 	var pool
-	var sel_char 
-	var active_type
-	if reactive:
-		active_type = "Reactive"
+	var rel_type
+	if npc.relationships.has(char_id):
+		rel_type = npc.relationships.char_id.type
+		pool = parser.pool_request(PoolType.NPC,rel_type,vibe,context,section)
 	else:
-		active_type = "Proactive"
+		rel_type = "UNAWARE"
+		pool = parser.pool_request(PoolType.NPC,rel_type,vibe,context,section)
 	
-	return [pool,sel_char]
+	return [pool,rel_type]
 
 func _condition_check(condition: String,npc: Resource, condition_type: String):
 	var expression = Expression.new()
@@ -222,11 +230,12 @@ func talk_to_npc(request: Resource) -> Array:
 		PoolType.EVENT:
 			data = _query_event(event_id, current_npc,vibe,context,section)
 			pool = data[0]
+			var type = data[1]
 			
 			var chosen_index = randi() % pool.size()
 			var pool_dict = pool[chosen_index]
 			chosen_line = pool_dict.line
-			var type = data[1]
+			
 			chosen_line = _dialogue_event_format(type, chosen_line)
 			for response in pool_dict.responses:
 				var condition = response.condition
@@ -239,6 +248,9 @@ func talk_to_npc(request: Resource) -> Array:
 				else:
 					pos_responses.append(response)
 		PoolType.NPC:
+			data = _query_char(char_id,npc,vibe,context,section)
+			pool = data[0]
+			var type = data[1]
 			pass
 		_:
 			push_error("Invalid PoolType see NpcDialogue.PoolType")

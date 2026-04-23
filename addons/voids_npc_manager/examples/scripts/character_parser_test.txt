@@ -1,5 +1,6 @@
 # Test: UNAWARE character pool
 # "~" denotes the pool type. Should match NpcManager._npc_fields or be "UNAWARE"
+@NPC
 
 ~UNAWARE
 /COLD
@@ -30,7 +31,6 @@
 		- "Heard about the fight at the tavern."
 			> "Tell me more" (condition:"None", condition_type:"None", effect:"None", tag:"fight_details")
 			> "Not interested" (condition:"None", condition_type:"None", effect:"None", tag:"end")
-
 /WARM
 	*REACTIVE
 	section direct_greetings

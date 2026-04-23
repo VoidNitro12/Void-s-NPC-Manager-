@@ -98,7 +98,10 @@ func add_event_field(field: String):
 
 ## Deletes a custom event field. 
 func remove_event_field(field: String):
-	_event_fields.erase(field)
+	if _event_fields.has(field):
+		_event_fields.erase(field)
+	else:
+		push_error("Event Field does not exist, see get_event_fields")
 
 ## Add a field to be used for NPCs. [code]field[/code] is the name of your entry
 ## eg making all NPC's contain an extra field "job"
@@ -107,7 +110,10 @@ func add_npc_field(field: String):
 
 ## Deletes a custom NPC field. 
 func remove_npc_field(field: String):
-	_npc_fields.erase(field)
+	if _npc_fields.has(field):
+		_npc_fields.erase(field)
+	else:
+		push_error("NPC Field does not exist, see get_npc_fields")
 
 ## Returns a list of all current custom event fields 
 func get_event_fields() -> Array:
@@ -136,6 +142,12 @@ func add_event_type(type: String, type_values: Array):
 	for type_value in type_values:
 		type_val[type_value] = "None"
 	_event_types[type] = type_val
+
+func remove_event_type(type: String):
+	if _event_types.has(type):
+		_event_types.erase(type)
+	else:
+		push_error("Event Type does not exist, see get_event_types")
 
 ## Add an event to memory. accepts a dictionary.
 ##[codeblock]
@@ -197,23 +209,23 @@ func add_event(event_info: Dictionary, event_type_info: Array, involve_player : 
 ## var new_npc = {
 ##	"name": "Void",
 ##	"health": 98.7,
-##	"friendliness": 1.4,
-##	"expressiveness": 0.5,
-##	"patience": 0.7,
-##	"curiosity": 0.3,
-##	"mood": 1.0,
-##	"personality_range": 1.8,
+##	"friendliness": 63,
+##	"expressiveness": 36,
+##	"patience": 70,
+##	"curiosity": 30,
+##	"mood": 50,
+##	"personality_range": 20,
 ##	"direct_events": [],
 ##	"indirect_events": [],
 ##	}
 ## add_npc(new_npc)
 ##[/codeblock]
-##[code]"friendliness"[/code] is a float of range [code]0.0[/code] to [code]1.0[/code] on how nice the NPC is. [br]
-##[code]"mood"[/code] is a float of range [code]-1.0[/code] to [code]1.0[/code] on the current mood of the NPC that affects all other values. [br]
-##[code]"patience"[/code] is a float of range [code]0.0[/code] to [code]1.0[/code] on how willing the NPC is to talk and for how long. [br]
-##[code]"expressiveness"[/code] is a float of range [code]0.0[/code] to [code]1.0[/code] on how much the NPC tells things. [br]
-##[code]"curiosity"[/code] is a float of range [code]0.0[/code] to [code]1.0[/code] on how much the NPC will inquire about things from others. [br]
-##[code]"personality_range"[/code] is a float of range [code]1.0[/code] to [code]3.0[/code] on how much the NPCs mood can affect other sliders. [br]
+##[code]"friendliness"[/code] is an int of range [code]0[/code] to [code]100[/code] on how nice the NPC is. [br]
+##[code]"mood"[/code] is an int of range [code]-15[/code] to [code]15[/code] on the current mood of the NPC that affects all other values. [br]
+##[code]"patience"[/code] is an int of range [code]0[/code] to [code]100[/code] on how willing the NPC is to talk and for how long. [br]
+##[code]"expressiveness"[/code] is an int of range [code]0[/code] to [code]100[/code] on how much the NPC tells things. [br]
+##[code]"curiosity"[/code] is an int of range [code]0[/code] to [code]100[/code] on how much the NPC will inquire about things from others. [br]
+##[code]"personality_range"[/code] is an int of range [code]30[/code] to [code]40[/code] on how much the NPCs mood can affect other sliders. [br]
 ##[br]
 ## Newly made NPcs by default have no relationships.
 ## For relationships see [method update_npc_relationship]. which should only be run after the npc has already been made to edit or create relationships with the player or other NPCs
@@ -303,13 +315,15 @@ func _check_for_npc(id) -> Resource:
 ## [code]value[/code] is the value you want to replace the current relationship value with.
 ## If you want to edit an NPCs relationship with the player, set [code]target = "player"[/code]. 
 ## Accepts either id's or names
-func update_npc_relationship(npc: String, target: String, value: float, type: String,):
+func update_npc_relationship(npc: String, target: String, value: int, type: String):
 	var sel_npc = _check_for_npc(npc)
 	var sel_target
 	var sel_npc_events = sel_npc.direct_events 
+	value = clamp(value, 0, 100)
 	
 	if type not in _relationship_types:
 		push_error("Type: %s is not a valid custom type. see add_relationship_type" %type)
+		return
 	
 	if target != "player":
 		sel_target = _check_for_npc(target)
