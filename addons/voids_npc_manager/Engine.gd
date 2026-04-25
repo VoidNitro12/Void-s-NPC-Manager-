@@ -6,6 +6,8 @@ extends Node
 # Minimum version the plugin accepts for old plugin saves
 const _MINIMUM_VERSION = "0.2.3"
 
+const _plugin_version = "0.3.0"
+
 ## Path where all NPC's will be stored. see [method set_npc_saves] to change it.[br]
 ## By default it is set to: [code] "res://addons/voids_npc_manager/NPCs/" [/code]
 var npc_path = "res://addons/voids_npc_manager/NPCs/"
@@ -20,7 +22,7 @@ var event_path = "res://addons/voids_npc_manager/Events/"
 var plugin_data_path: String = "res://addons/voids_npc_manager/plugin_data.tres"
 
 ## Set to [code]false[/code] to disable automatic loading of stored plugindata at runtime (_ready)
-var load_pluginData_on_runtime: bool = true
+var load_pluginData_on_runtime: bool =  false
 
 ## A map of conditions that will be used for parsing any conditional dialogue choice. see [method register_dialogue_condition] to add
 var dialogue_conditions = {}
@@ -152,6 +154,7 @@ func add_event_type(type: String, type_values: Array):
 		type_val[type_value] = "None"
 	_event_types[type] = type_val
 
+## Removes and Event type from memory
 func remove_event_type(type: String):
 	if _event_types.has(type):
 		_event_types.erase(type)
@@ -178,7 +181,7 @@ func remove_event_type(type: String):
 ## If added individual NPC's data will be updated automaticaly.
 ## Any existing custom fields should be included. [br]
 ## Set [code]involve_player[/code] to [code]true[/code] to add this events to the players data, set [code]player_type[/code] to "direct_events" or "indirect_events" if so
-func add_event(event_info: Dictionary, event_type_info: Array, involve_player : bool = false , player_type : String = "none"):
+func add_event(event_info: Dictionary, event_type_info: Array, involve_player : bool = false , player_type : String = ""):
 	
 	var num_ids = _event_counter + 1
 	var event_id =  str(num_ids)
@@ -362,9 +365,10 @@ func _check_for_npc(id) -> Resource:
 
 ## Updates an NPCs relationship data using the desired NPCs name or id, and which NPC to edit their relationship
 ## [code]npc[/code] is the NPC whos relationship you wish to update, and [code]target[/code] is the NPC
-## that you want to change [code]npc[/code]'s relationship with[br]
-## [code]value[/code] is the value you want to replace the current relationship value with.
-## If you want to edit an NPCs relationship with the player, set [code]target = "player"[/code]. 
+## that you want to change [code]npc[/code]'s relationship with.[br]
+## [code]value[/code] is the value you want to replace the current relationship value with.[br]
+## [code]type[/code] is the type of relationship the NPCs have. See [method add_relationship_type()] to create types
+## If you want to edit an NPCs relationship with the player, set [code]target = "player"[/code]. [br]
 ## Accepts either id's or names
 func update_npc_relationship(npc: String, target: String, value: int, type: String):
 	var sel_npc = _check_for_npc(npc)
@@ -470,7 +474,7 @@ func get_npc(npc_id: String) -> Resource:
 	
 	return npc
 
-## gets an Events's Resource from its id and returns an array of said resource and the Event's directory.
+## gets an Events's Resource from its id and returns it.
 func get_event(event_id: String) -> Resource:
 	var target = "Event_%s.tres" %event_id
 	var dir = event_path + target
@@ -497,19 +501,9 @@ func _load_json(path: String) -> Dictionary:
 		return {}
 	return parsed
 
-func _load_dgpool_file(path: String) -> String:
-	var validator = ParserValidator.new()
-	validator.validate_dialogue_file(path)
-	return path
-
-## Accepts a .TXT file for dialogue in a specific format to utilize in dialogue.
-## will be converted to a custom extention later. [br]
-func load_dialogue_pools(event_pool_path: String, character_pool_path: String):
-	NpcDialogue._dialogue_pool_event = _load_dgpool_file(event_pool_path)
-	NpcDialogue._dialogue_pool_character = _load_dgpool_file(character_pool_path)
-
 ## set the file path NPC's data should be stored in. Must be an absolute path
-## see [method set_event_saves] to set event save path
+## see [method set_event_saves] to set event save path.[br]
+## Will create folder if not found.
 func set_npc_saves(path: String):
 	if not path.is_absolute_path():
 		push_error("path must be an absolute path")
@@ -522,11 +516,13 @@ func set_npc_saves(path: String):
 		return
 	var dir = DirAccess.open(path)
 	if dir == null:
-		dir.make_dir_recursive(path)
+		dir = DirAccess
+		dir.make_dir_recursive_absolute(path)
 	npc_path = path
 
 ## set the file path Event data should be stored in. Must be an absolute path
-## see [method set_npc_saves] to set NPC save path
+## see [method set_npc_saves] to set NPC save path.[br]
+## Will create folder if not found.
 func set_event_saves(path: String):
 	if not path.is_absolute_path():
 		push_error("path must be an absolute path")
@@ -539,11 +535,13 @@ func set_event_saves(path: String):
 		return
 	var dir = DirAccess.open(path)
 	if dir == null:
-		dir.make_dir_recursive(path)
+		dir = DirAccess
+		dir.make_dir_recursive_absolute(path)
 	event_path = path
 	
 ## set the file path general data should be stored in. Include custom fields, player data etc.
-## Must be an absolute path. expects a folder path in [code]path[/code] and a file name in [code]file_name[/code]
+## Must be an absolute path. Expects a folder path in [code]path[/code] and a file name in [code]file_name[/code]. [br]
+## Will create folder if not found.
 func set_data_saves(file_name: String,path: String):
 	if not file_name.ends_with(".tres"):
 		file_name += ".tres"
@@ -561,7 +559,8 @@ func set_data_saves(file_name: String,path: String):
 		return
 	var dir = DirAccess.open(path)
 	if dir == null:
-		dir.make_dir_recursive(path)
+		dir = DirAccess
+		dir.make_dir_recursive_absolute(path)
 	plugin_data_path = save_path
 	save_plugin_data()
 
@@ -569,6 +568,7 @@ func set_data_saves(file_name: String,path: String):
 func save_plugin_data():
 	var data = PluginData.new()
 	var save_data = {
+		"plugin_version": _plugin_version,
 		"game_time": game_time,
 		"player_data":player_data,
 		"event_fields": _event_fields,
@@ -591,7 +591,7 @@ func save_plugin_data():
 ## is automatically called at runtime if [member load_PluginData_on_runtime] is [code]true[/code]. 
 func load_plugin_data(merge: bool = false): 
 	if not ResourceLoader.exists(plugin_data_path):
-		push_warning("No lugin savedata file found at %s, creating file" %plugin_data_path)
+		push_warning("No plugin savedata file found at %s, creating file" %plugin_data_path)
 		save_plugin_data()
 		return
 	
@@ -606,7 +606,7 @@ func load_plugin_data(merge: bool = false):
 	var current_major = int(_MINIMUM_VERSION.split(".")[0])
 	var current_minor = int(_MINIMUM_VERSION.split(".")[1])
 	var save_major =  int(data.plugin_version.split(".")[0])
-	var save_minor = 	int(data.plugin_version.split(".")[1])
+	var save_minor = int(data.plugin_version.split(".")[1])
 	
 	if save_major < current_major:
 		push_error("Plugin savedata Outdated, expected at least %s got %s"%[_MINIMUM_VERSION,data.get("plugin_version")])
@@ -617,10 +617,13 @@ func load_plugin_data(merge: bool = false):
 		push_warning("Plugin savedata from newer version. Proceeding with load. Plugin Version: %s , Save Version: %s"%[_MINIMUM_VERSION,data.get("plugin_version")])
 		
 	var required_fields = ["npc_ids", "event_ids", "npc_counter", "relationship_types", "npc_fields", "event_fields", "npc_path", "event_path"]
+	var missing_fields = []
 	for field in required_fields:
-		if not data.has(field):
-			push_error("Required Field missing from plugin save_data : %s" %field)
-			return
+		if not data.get(field) == null:
+			missing_fields.append(field)
+	if missing_fields.size() > 0:
+		push_error("Required Field missing from plugin save_data : %s" %str(missing_fields))
+		return
 	var new_state = {
 	"game_time" = data.game_time,
 	"player_data" = data.player_data,

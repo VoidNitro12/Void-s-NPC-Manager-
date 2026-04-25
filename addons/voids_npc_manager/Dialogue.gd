@@ -58,6 +58,8 @@ const VIBE_TEMPLATES = [
 	{ "name": Vibe.DETACHED, "friendliness":["low"], "expressivness":["neutral","low"], "patience":["neutral"], "curiousity":["neutral"]}
 ]
 
+var parser = DialogueCache.new()
+
 # formats a given line by swapping key strings with their information counterparts.
 # all dialouge event templates should have keys such as {npc1}. corresponding to the event type
 # where {npc1} is a valid field in the provided event_type that will also contain a string if filled. 
@@ -133,7 +135,6 @@ func _vibe_map(npc: Resource):
 
 func _query_event(event_id: String, npc: Resource, vibe: String, context: String, section: String) -> Array:
 	var event = NpcManager.get_event(event_id)
-	var parser = Parser.new()
 	var pool
 	var event_type = event.type
 	var prefix
@@ -151,7 +152,6 @@ func _query_event(event_id: String, npc: Resource, vibe: String, context: String
 
 func _query_char(char_id: String, npc: Resource, vibe: String, context: String, section: String) -> Array:
 	var target = NpcManager.get_npc(char_id)
-	var parser = Parser.new()
 	var pool
 	var rel_type
 	if npc.relationships.has(char_id):

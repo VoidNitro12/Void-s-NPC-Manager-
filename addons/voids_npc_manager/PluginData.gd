@@ -2,7 +2,7 @@
 class_name PluginData
 extends Resource
 
-var plugin_version: String
+var plugin_version: String = "0.0.0"
 var npc_path: String = "res://addons/voids_npc_manager/NPCs/"
 var event_path: String = "res://addons/voids_npc_manager/Events/"
 var plugin_data_path: String = "res://addons/voids_npc_manager/"
@@ -28,6 +28,7 @@ var player_data: Dictionary = {
 	}
 	
 func store(info : Dictionary): 
+	plugin_version = info.plugin_version
 	npc_path  = info.npc_path 
 	event_path = info.event_path
 	plugin_data_path = info.plugin_data_path

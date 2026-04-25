@@ -1,4 +1,5 @@
-class_name ParserValidator
+@tool
+class_name Parser
 
 const POOL_MARKER = "@"
 const TYPE_MARKER = "~"
@@ -17,20 +18,26 @@ var hierarchy = {
 	NPC_LINE_MARKER : [RESPONSE_MARKER],
 	RESPONSE_MARKER: [],
 	}
-
-var locator = {"POOL_TYPE": {},"VIBE": {},"MODE":{},"SECTION":{}}
-var script_type = ""
-var current_type = ""
-var current_vibe = ""
-var current_mode = ""
-var current_section = ""
-var _on_npc_line = false
-var _line_num = 0
+	
+var regex = RegEx.new()
+var response_format = "\"([^\"]+)\"\\s*(\\{[^\\}]+\\})"
+var locator = {}
+var script_type 
+var current_type: String = ""
+var current_vibe: String = ""
+var current_mode: String = ""
+var current_section: String = ""
+var current_locator_pointer: String = ""
+var _on_npc_line: bool = false
+var _line_num: int = 0
 var _current_level
-var _to_skip = []
-var _valid = false
+var _to_skip: Array = []
+var _valid: bool = false
+var current_choice: Dictionary =  {"line": "", "responses": []}
+var section_data: Array
 
 func validate_dialogue_file(file_path: String) -> Array:
+	regex.compile(response_format)
 	_valid = false
 	_line_num = 0
 	current_type = ""
@@ -98,6 +105,8 @@ func validate_dialogue_file(file_path: String) -> Array:
 			push_error("Unrecognized line beginning on line %d"%_line_num)
 			_move_till_next_top()
 			stack_check.append(false)
+		if current_choice["line"] != "" or current_choice["responses"].size() > 0:
+			section_data.append(current_choice)
 	assert(stack_check.has(false) == false, "Unable to parse pool script due to errors")
 	return [locator,script_type]
 
@@ -115,18 +124,20 @@ func _check_pool_type(line: String):
 	match name:
 		"EVENT":
 			script_type = NpcDialogue.PoolType.EVENT
+			locator= {}
 		"NPC":
 			script_type = NpcDialogue.PoolType.NPC
+			locator= {}
 		_:
 			push_error("Invalid Pool Type, should be EVENT or NPC")
 			return false
 	return true
 
 func _check_event_type(line: String):
-	current_type = null
-	current_vibe = null
-	current_mode = null
-	current_section = null
+	current_type = ""
+	current_vibe = ""
+	current_mode = ""
+	current_section = ""
 	_on_npc_line = false
 	_current_level = TYPE_MARKER
 	var name = line.trim_prefix(TYPE_MARKER).strip_edges()
@@ -139,7 +150,6 @@ func _check_event_type(line: String):
 			else:
 				_current_level = VIBE_MARKER
 				current_type = name
-				locator["POOL_TYPE"][name] = _line_num
 				return true
 		NpcDialogue.PoolType.NPC:
 			if name not in NpcManager._relationship_types:
@@ -149,15 +159,14 @@ func _check_event_type(line: String):
 			else:
 				_current_level = VIBE_MARKER
 				current_type = name
-				locator["POOL_TYPE"][name] = _line_num
 				return true
 		_:
 			push_error("Invalid Pool Type, should be EVENT or NPC")
 	
 		
 func _check_vibe(line: String):
-	current_vibe = null
-	if current_type == null:
+	current_vibe = ""
+	if current_type == "":
 		push_error("No _valid Pool type to place Descriptor under on line %d"%_line_num)
 		_move_till_next_top()
 		return false
@@ -169,15 +178,13 @@ func _check_vibe(line: String):
 	else:
 		_current_level = MODE_MARKER
 		current_vibe = name
-		var locator_name = current_type + SEPARATOR + name
-		locator["VIBE"][locator_name] = _line_num
 		return true
 
 		
 
 func _check_mode(line: String):
-	current_mode = null
-	if current_vibe == null:
+	current_mode = ""
+	if current_vibe == "":
 		push_error("No valid Emotional Descriptor to place Context under on line %d"%_line_num)
 		_move_till_next_top()
 		return false
@@ -188,13 +195,11 @@ func _check_mode(line: String):
 	else:
 		_current_level = SECTION_MARKER
 		current_mode = name
-		var locator_name = current_type + SEPARATOR + current_vibe + SEPARATOR + name
-		locator["MODE"][locator_name] = _line_num
 		return true
 
 func _check_section(line: String):
-	current_section = null
-	if current_mode == null:
+	current_section = ""
+	if current_mode == "":
 		push_error("No valid Emotional Descriptor  to place Context under on line %d"%_line_num)
 		_move_till_next_top()
 		return false
@@ -202,7 +207,10 @@ func _check_section(line: String):
 	current_section = name
 	_current_level = NPC_LINE_MARKER
 	var locator_name = current_type + SEPARATOR + current_vibe + SEPARATOR + current_mode + SEPARATOR + name
-	locator["SECTION"][locator_name] = _line_num
+	current_locator_pointer = locator_name
+	locator[current_locator_pointer] = []
+	section_data = locator[current_locator_pointer]
+	current_choice = {"line": "", "responses": []}
 	return true
 
 func _check_npc_line(line: String):
@@ -219,6 +227,12 @@ func _check_npc_line(line: String):
 	else:
 		_current_level = RESPONSE_MARKER
 		_on_npc_line = true
+		if current_choice["line"] != "" or current_choice["responses"].size() > 0:
+			section_data.append(current_choice)
+		current_choice = {"line": "", "responses": []}
+		text = text.trim_prefix("\"")
+		text = text.trim_suffix("\"")
+		current_choice["line"] = text
 		return true
 
 func _check_responses(line: String):
@@ -235,16 +249,35 @@ func _check_responses(line: String):
 	return false
 
 func validate_response_format(line: String) -> bool:
-	var pattern = "\"([^\"]+)\"\\s*(\\{[^\\}]+\\})"
-	var regex = RegEx.new()
+	var response = {}
 	var text
 	var meta_raw
-	regex.compile(pattern)
 	var found = regex.search(line)
 	if found == null:
 		return false
 	text = found.get_string(1)
 	meta_raw = found.get_string(2)
+	response["condition"] = "None"
+	response["condition_type"] = "None"
+	response["effect"] = "None"
+	response["tag"] = "None"
+	response["text"] = "None"
+	
+	var meta = JSON.parse_string(meta_raw)
+	if meta == null:
+		push_error("Invalid Meta Data Formating on Line %d"%_line_num)
+		return false
+	response["text"] = text
+	if meta.has("condition"):
+		response["condition"] = meta.condition
+	if meta.has("condition_type"):
+		response["condition_type"] = meta.condition_type
+	if meta.has("effect"):
+		response["effect"] = meta.effect
+	if meta.has("tag"):
+		response["tag"] = meta.tag
+	
+	current_choice["responses"].append(response)
 	return true
 
 func _move_till_next_top():
