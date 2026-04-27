@@ -4,11 +4,12 @@ var _pool_event_locator
 var _pool_character_locator
 var _validator = Parser.new()
 var _dialogue_store = ScriptData.new()
-var _script_data_path = "res://addons/dgpool_extention/parse/ScriptData.tres"
+var _script_data_path = "res://addons/voids_npc_manager/parse/ScriptData.tres"
 
 func parse_pool(file_path: String):
 	var script = _validator.validate_dialogue_file(file_path)
 	var locator = script[0]
+	print(locator)
 	var type = script[1]
 	match type:
 		NpcDialogue.PoolType.EVENT:

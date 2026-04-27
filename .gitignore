@@ -21,7 +21,7 @@ project.godot
 icon.svg
 icon.svg.import
 .editorconfig
-.gitattributes
 
 #Project folders
 /Test
+/addons/godot-git-plugin

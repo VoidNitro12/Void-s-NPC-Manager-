@@ -1,4 +1,4 @@
-# Void's NPC Manager v0.3.0 (alpha1,alpha2)
+# Void's NPC Manager v0.2.3 -> v0.3.0 (alpha3)
 - removed `load_dialogue_pools()` and `_load_dgpool_file()` from Engine.gd
 - changed all instances of `make_dir_recursive() to `make_dir_recursive_absolute()`
 - renamed `Dialogue_Syntax.md` -> `DialogueSyntax.md` and added `GettingStarted.md`
@@ -14,12 +14,12 @@
 - filled in PoolType.NPC section in `talk_to_npc()` in Dialogue.gd
 - `_condition_check()` in Dialogue.gd now exits early on DialogueConditionType.CUSTOM
 - added validation checks to `_check_str_condition()` in Dialogue.gd
-
-
-# Dgpool Extension v0.2.0 (alpha1,alpha2)
 - renamed `compile/` folder -> to `parse/` folder
 - renamed `parser.gd` -> to `DialogueCache.gd` and no longer does runtime parsing and now just does lookups of stored data
 - added ScriptData.gd resource class
 - renamed `parser_validator.gd` -> to `Parser.gd`
 - added const COMMENT_MARKER to Parser.gd and set to "#"
 - improved `inline_comments_check()` in Parser.gd to better check for comments and double as a quotation check
+- removed the dgpool_extention plugin and migrated its files to `addons/voids_npc_manager/`
+- added `Lexer.gd` to handle tokenizing
+- added `Validator.gd` to handle validation of dialogue scripts

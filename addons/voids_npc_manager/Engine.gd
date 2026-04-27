@@ -6,8 +6,7 @@ extends Node
 # Minimum version the plugin accepts for old plugin saves
 const _MINIMUM_VERSION = "0.2.3"
 
-#alpha1
-const _plugin_version = "0.3.0"
+const _plugin_version = "0.3.0-alpha3"
 
 ## Path where all NPC's will be stored. see [method set_npc_saves] to change it.[br]
 ## By default it is set to: [code] "res://addons/voids_npc_manager/NPCs/" [/code]

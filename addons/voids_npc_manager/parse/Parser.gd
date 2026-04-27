@@ -50,13 +50,14 @@ func validate_dialogue_file(file_path: String) -> Array:
 	if file == null:
 		push_error("Could not open file: %s" % file_path)
 		stack_check.append(false)
+		assert(stack_check.has(false) == false, "Unable to parse pool script due to errors")
 	var lines = file.get_as_text().split("\n")
 	file.close()
 	
 	for line in lines:
 		_line_num += 1
 		var bare_line = line.strip_edges()
-		if bare_line.begins_with("COMMENT_MARKER") or bare_line.is_empty():
+		if bare_line.begins_with(COMMENT_MARKER) or bare_line.is_empty():
 			continue
 		bare_line = inline_comments_check(bare_line)
 		
@@ -163,8 +164,8 @@ func _check_event_type(line: String):
 				return true
 		_:
 			push_error("Invalid Pool Type, should be EVENT or NPC")
-	
-		
+			return false
+
 func _check_vibe(line: String):
 	current_vibe = ""
 	if current_type == "":
@@ -176,12 +177,11 @@ func _check_vibe(line: String):
 	if name not in NpcDialogue.Vibe.keys():
 		push_error("In_valid Emotional Descriptor on line %d" %_line_num)
 		_move_till_next_top()
+		return false
 	else:
 		_current_level = MODE_MARKER
 		current_vibe = name
 		return true
-
-		
 
 func _check_mode(line: String):
 	current_mode = ""
@@ -193,6 +193,7 @@ func _check_mode(line: String):
 	if name not in NpcDialogue.PoolContext.keys():
 		push_error("Invalid Pool Context on line %d" %_line_num)
 		_move_till_next_top()
+		return false
 	else:
 		_current_level = SECTION_MARKER
 		current_mode = name
@@ -209,28 +210,25 @@ func _check_section(line: String):
 	_current_level = NPC_LINE_MARKER
 	var locator_name = current_type + SEPARATOR + current_vibe + SEPARATOR + current_mode + SEPARATOR + name
 	current_locator_pointer = locator_name
+	current_choice = {"line": "", "responses": []}
 	locator[current_locator_pointer] = []
 	section_data = locator[current_locator_pointer]
-	current_choice = {"line": "", "responses": []}
 	return true
 
 func _check_npc_line(line: String):
 	_on_npc_line = false
-	if current_section == null:
+	if current_section == "":
 		push_error("No valid Section to place Context under on line %d"%_line_num)
 		_move_till_next_top()
 		return false
 	var text = line.trim_prefix(NPC_LINE_MARKER).strip_edges()
-	if not text.begins_with("\"") and not text.ends_with("\""):
+	if not text.begins_with("\"") or not text.ends_with("\""):
 		push_error("NPC line must be contained in qoutes with no other statements, line %d"%_line_num)
 		_move_till_next_top()
 		return false
 	else:
 		_current_level = RESPONSE_MARKER
 		_on_npc_line = true
-		if current_choice["line"] != "" or current_choice["responses"].size() > 0:
-			section_data.append(current_choice)
-		current_choice = {"line": "", "responses": []}
 		text = text.trim_prefix("\"")
 		text = text.trim_suffix("\"")
 		current_choice["line"] = text
@@ -292,8 +290,8 @@ func inline_comments_check(line: String) -> String:
 			quotes_stack += 1 
 		if quotes_stack == 2:
 			quotes_stack = 0
-		if line[i] == COMMENT_MARKER and quotes_stack == 0:
+		elif line[i] == COMMENT_MARKER and quotes_stack == 0:
 			line = line.substr(0,i)
 	if quotes_stack != 0:
-		push_error("Uneven number of qouatations in line %d"%_line_num)
+		push_error("Uneven number of qoutations in line %d"%_line_num)
 	return line
